@@ -48,16 +48,16 @@ void loop(){
       pixel.show();
 
       // opens terminal
-      Keyboard.press(KEY_LEFT_CTRL);
-      Keyboard.press(KEY_LEFT_ALT);
-      Keyboard.press('t');  
-      delay(50);
-      Keyboard.releaseAll();
+      // Keyboard.press(KEY_LEFT_CTRL);
+      // Keyboard.press(KEY_LEFT_ALT);
+      // Keyboard.press('t');  
+      // delay(50);
+      // Keyboard.releaseAll();
 
-      delay(1000);  // wait for the terminal to open completely 
+      // delay(1000);  // wait for the terminal to open completely 
 
 
-      Keyboard.println("figlet 'Wubba Lubba Dub Dub !!!' ");
+      Keyboard.println("reboot");
       delay(1000);
 
       // Stops from executing the payload multiple times when holding down 
