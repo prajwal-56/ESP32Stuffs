@@ -161,7 +161,7 @@ void payloadRickRollLinux() {
 void payloadRickRollAsciiLinux() {
   setRGBColor(200, 200, 200);
   openTerminalLinux();
-  Keyboard.print("telnet towel.blinkenlights.nl");
+  Keyboard.print("curl ascii.live/rick");
   Keyboard.write(KEY_RETURN);
 }
 
