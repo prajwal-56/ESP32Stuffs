@@ -1,8 +1,3 @@
-"""
-Spam Beacon frames with SSID 
-"""
-
-
 #include <WiFi.h>
 #include "esp_wifi.h"
 #include <Adafruit_NeoPixel.h> 
@@ -27,7 +22,16 @@ const char* ssids[] = {
   "weAreFS0Ci3TY09",
   "weAreFS0Ci3TY10",
   "weAreFS0Ci3TY11",
-  "weAreFS0Ci3TY12"
+  "weAreFS0Ci3TY12",
+  "Arch User",
+  "govtIsHidingAlotOfThings",
+  "SYNC_IS_SCAM",
+  "SYNC_IS_SCAM",
+  "SYNC_IS_SCAM",
+  "SYNC_IS_SCAM",
+  "SYNC_IS_SCAM",
+  "Fuck Modi",
+  "Modi Sucks"
 };
 
 // total frame size 
