@@ -213,23 +213,32 @@ void payloadSettingsLinux() {
   Keyboard.write(KEY_RETURN);
 }
 
-void speedtype(){
+void type(){
   setRGBColor(120, 120, 120);
   // Opens the GNOME Activities/search overlay, then searches for Settings.
   // On KDE/XFCE/etc you'll want to change this binding.
-  openTerminalLinux();
-  delay(400);
-  Keyboard.print("ttyper -w 50");
   delay(200);
-  Keyboard.write(KEY_RETURN);
-  delay(500);
 
-  // actual typing things 
-  Keyboard.print("Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis");
-  delay(200);
-  Keyboard.write(KEY_RETURN);
+  const char charset[] = "1234567890qwertyuiopasdfghjklzxcvbnm[;,.'] ";
+  const int charsetLength = sizeof(charset) - 1;
+
+// A loop that runs forever - change the condition for something else
+  while (1){
+                                    // min , max
+    int currentWordLength = random(3, 16);    // picks a random number between that range for a random word length
+    
+    // type a word of that length
+    for(int i =0; i < currentWordLength; i++){
+      char randomChar = charset[random(0, charsetLength )];
+      Keyboard.write( randomChar );
+      delay(2);
+    }
+
+    Keyboard.write(KEY_RETURN);
+    Keyboard.print(" ");    // leave space after each word
+
+  }
 }
-
 // ======================================================
 // ==============  GENERIC KEY / TEXT INPUT =============
 // ======================================================
@@ -350,7 +359,7 @@ const char* CONTROL_PANEL_HTML = R"rawliteral(
       <button class='btn' onclick="run('/run/cmatrixlinux')">Matrix Screen</button>
       <button class='btn' onclick="run('/run/volumeuplinux')">Volume Up</button>
       <button class='btn' onclick="run('/run/settingslinux')">Open Settings</button>
-      <button class='btn' onclick="run('/run/speedtype')">Speed type flex</button>
+      <button class='btn' onclick="run('/run/type')">Test Typing speed (no exit)</button>
       <button class='btn btn-danger' onclick="confirmRun('/run/shutdownlinux', 'shut down this Linux machine')">Shutdown</button>
       <button class='btn btn-danger' onclick="confirmRun('/run/rebootlinux', 'reboot this Linux machine')">Reboot</button>
 
@@ -531,11 +540,12 @@ void setup() {
     payloadSettingsLinux();
   });
 
-  // speed typing - 10 words:
-  server.on("/run/speedtype", HTTP_GET, []() {
-    server.send(200, "text/plain", "Deploying speed type ttyper (Linux)...");
-    speedtype();
+  // speed typing :
+  server.on("/run/type", HTTP_GET, []() {
+    server.send(200, "text/plain", "Deploying speed type (Linux)...");
+    type();
   });
+
 
 
   server.begin();
