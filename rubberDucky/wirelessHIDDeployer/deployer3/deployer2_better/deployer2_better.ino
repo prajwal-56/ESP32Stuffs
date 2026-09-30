@@ -208,8 +208,25 @@ void payloadSettingsLinux() {
   delay(100);
   Keyboard.releaseAll();
   delay(400);
-  Keyboard.print("settings");
+  Keyboard.print("system settings");
   delay(300);
+  Keyboard.write(KEY_RETURN);
+}
+
+void speedtype(){
+  setRGBColor(120, 120, 120);
+  // Opens the GNOME Activities/search overlay, then searches for Settings.
+  // On KDE/XFCE/etc you'll want to change this binding.
+  openTerminalLinux();
+  delay(400);
+  Keyboard.print("ttyper -w 50");
+  delay(200);
+  Keyboard.write(KEY_RETURN);
+  delay(500);
+
+  // actual typing things 
+  Keyboard.print("Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis");
+  delay(200);
   Keyboard.write(KEY_RETURN);
 }
 
@@ -333,8 +350,10 @@ const char* CONTROL_PANEL_HTML = R"rawliteral(
       <button class='btn' onclick="run('/run/cmatrixlinux')">Matrix Screen</button>
       <button class='btn' onclick="run('/run/volumeuplinux')">Volume Up</button>
       <button class='btn' onclick="run('/run/settingslinux')">Open Settings</button>
+      <button class='btn' onclick="run('/run/speedtype')">Speed type flex</button>
       <button class='btn btn-danger' onclick="confirmRun('/run/shutdownlinux', 'shut down this Linux machine')">Shutdown</button>
       <button class='btn btn-danger' onclick="confirmRun('/run/rebootlinux', 'reboot this Linux machine')">Reboot</button>
+
     </section>
   </div>
 
@@ -511,6 +530,13 @@ void setup() {
     server.send(200, "text/plain", "Opening settings (Linux)...");
     payloadSettingsLinux();
   });
+
+  // speed typing - 10 words:
+  server.on("/run/speedtype", HTTP_GET, []() {
+    server.send(200, "text/plain", "Deploying speed type ttyper (Linux)...");
+    speedtype();
+  });
+
 
   server.begin();
 
