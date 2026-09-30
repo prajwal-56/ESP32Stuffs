@@ -6,16 +6,16 @@
 #include "USBHIDConsumerControl.h"
 
 // --- Hardware Setup ---
-#define RGB_PIN        48    // Switch to 38 or 21 if your onboard LED stays dark
-#define NUMPIXELS       1
+#define RGB_PIN 48  // Switch to 38 or 21 if your onboard LED stays dark
+#define NUMPIXELS 1
 const char* AP_SSID = "ESP32-S3 Command Center";
 
 Adafruit_NeoPixel rgbLed(NUMPIXELS, RGB_PIN, NEO_GRB + NEO_KHZ800);
 WebServer server(80);
 USBHIDKeyboard Keyboard;
-USBHIDConsumerControl ConsumerControl; // Media keys (volume etc.) live on a
-                                       // separate HID usage page from the
-                                       // keyboard, hence the separate class.
+USBHIDConsumerControl ConsumerControl;  // Media keys (volume etc.) live on a
+                                        // separate HID usage page from the
+                                        // keyboard, hence the separate class.
 
 // --- Functional RGB Helper ---
 void setRGBColor(uint8_t r, uint8_t g, uint8_t b) {
@@ -30,27 +30,31 @@ void setRGBColor(uint8_t r, uint8_t g, uint8_t b) {
 // another click releases it. This lets you build combos from the
 // web UI, e.g. latch Ctrl, then type a letter, then unlatch Ctrl.
 
-bool ctrlHeld  = false;
+bool ctrlHeld = false;
 bool shiftHeld = false;
-bool altHeld   = false;
-bool guiHeld   = false;
+bool altHeld = false;
+bool guiHeld = false;
 
 void toggleModifier(const String& name, String& stateOut) {
   if (name == "ctrl") {
     ctrlHeld = !ctrlHeld;
-    if (ctrlHeld) Keyboard.press(KEY_LEFT_CTRL); else Keyboard.release(KEY_LEFT_CTRL);
+    if (ctrlHeld) Keyboard.press(KEY_LEFT_CTRL);
+    else Keyboard.release(KEY_LEFT_CTRL);
     stateOut = ctrlHeld ? "on" : "off";
   } else if (name == "shift") {
     shiftHeld = !shiftHeld;
-    if (shiftHeld) Keyboard.press(KEY_LEFT_SHIFT); else Keyboard.release(KEY_LEFT_SHIFT);
+    if (shiftHeld) Keyboard.press(KEY_LEFT_SHIFT);
+    else Keyboard.release(KEY_LEFT_SHIFT);
     stateOut = shiftHeld ? "on" : "off";
   } else if (name == "alt") {
     altHeld = !altHeld;
-    if (altHeld) Keyboard.press(KEY_LEFT_ALT); else Keyboard.release(KEY_LEFT_ALT);
+    if (altHeld) Keyboard.press(KEY_LEFT_ALT);
+    else Keyboard.release(KEY_LEFT_ALT);
     stateOut = altHeld ? "on" : "off";
   } else if (name == "gui") {
     guiHeld = !guiHeld;
-    if (guiHeld) Keyboard.press(KEY_LEFT_GUI); else Keyboard.release(KEY_LEFT_GUI);
+    if (guiHeld) Keyboard.press(KEY_LEFT_GUI);
+    else Keyboard.release(KEY_LEFT_GUI);
     stateOut = guiHeld ? "on" : "off";
   }
 }
@@ -65,11 +69,11 @@ void releaseAllModifiers() {
 // ======================================================
 
 void openRunMenuWindows() {
-  Keyboard.press(KEY_LEFT_GUI); // Windows Key
+  Keyboard.press(KEY_LEFT_GUI);  // Windows Key
   Keyboard.press('r');
   delay(100);
   Keyboard.releaseAll();
-  delay(500); // Wait for Run dialog to appear
+  delay(500);  // Wait for Run dialog to appear
 }
 
 // Opens a terminal on most GNOME/Ubuntu-based Linux desktops.
@@ -81,7 +85,7 @@ void openTerminalLinux() {
   Keyboard.press('t');
   delay(100);
   Keyboard.releaseAll();
-  delay(800); // give the terminal time to open
+  delay(800);  // give the terminal time to open
 }
 
 // ======================================================
@@ -100,7 +104,7 @@ void payloadCMatrixWindows() {
   openRunMenuWindows();
   Keyboard.print("cmd");
   Keyboard.write(KEY_RETURN);
-  delay(600); // Wait for command prompt to visually pull up
+  delay(600);  // Wait for command prompt to visually pull up
 
   // Fake a green "matrix" screen using built-in tree (no extra installs needed)
   Keyboard.print("color 0a && cls && echo Initializing Matrix... && timeout 2 > nul && tree c:\\");
@@ -117,7 +121,7 @@ void payloadVolumeUpWindows() {
 }
 
 void payloadShutdownWindows() {
-  setRGBColor(180, 40, 40); // Warning
+  setRGBColor(180, 40, 40);  // Warning
   openRunMenuWindows();
   // Shuts down computer in 60 seconds with a custom comment box popping up
   Keyboard.print("shutdown /s /t 60 /c \"ESP32-S3 Remote Triggered System Power Down!\"");
@@ -125,7 +129,7 @@ void payloadShutdownWindows() {
 }
 
 void payloadRebootWindows() {
-  setRGBColor(180, 40, 40); // Warning
+  setRGBColor(180, 40, 40);  // Warning
   openRunMenuWindows();
   Keyboard.print("shutdown /r /t 60 /c \"ESP32-S3 Remote Triggered Reboot!\"");
   Keyboard.write(KEY_RETURN);
@@ -213,7 +217,8 @@ void payloadSettingsLinux() {
   Keyboard.write(KEY_RETURN);
 }
 
-void type(){
+// Keyboard spammer - Enters random words of random length forver (until reset)
+void type() {
   setRGBColor(120, 120, 120);
   // Opens the GNOME Activities/search overlay, then searches for Settings.
   // On KDE/XFCE/etc you'll want to change this binding.
@@ -222,21 +227,20 @@ void type(){
   const char charset[] = "1234567890qwertyuiopasdfghjklzxcvbnm[;,.'] ";
   const int charsetLength = sizeof(charset) - 1;
 
-// A loop that runs forever - change the condition for something else
-  while (1){
-                                    // min , max
-    int currentWordLength = random(3, 16);    // picks a random number between that range for a random word length
-    
+  // A loop that runs forever - change the condition for something else
+  while (1) {
+    // min , max
+    int currentWordLength = random(3, 16);  // picks a random number between that range for a random word length
+
     // type a word of that length
-    for(int i =0; i < currentWordLength; i++){
-      char randomChar = charset[random(0, charsetLength )];
-      Keyboard.write( randomChar );
-      delay(2);
+    for (int i = 0; i < currentWordLength; i++) {
+      char randomChar = charset[random(0, charsetLength)];
+      Keyboard.write(randomChar);
+      delay(1);
     }
 
     Keyboard.write(KEY_RETURN);
-    Keyboard.print(" ");    // leave space after each word
-
+    Keyboard.print(" ");  // leave space after each word
   }
 }
 // ======================================================
@@ -244,23 +248,26 @@ void type(){
 // ======================================================
 
 void pressNamedKey(const String& name) {
-  if (name == "enter")       { Keyboard.write(KEY_RETURN); }
-  else if (name == "tab")    { Keyboard.write(KEY_TAB); }
-  else if (name == "esc")    { Keyboard.write(KEY_ESC); }
-  else if (name == "space")  { Keyboard.write(' '); }
-  else if (name == "backspace") { Keyboard.write(KEY_BACKSPACE); }
-  else if (name == "wintap") {
+  if (name == "enter") {
+    Keyboard.write(KEY_RETURN);
+  } else if (name == "tab") {
+    Keyboard.write(KEY_TAB);
+  } else if (name == "esc") {
+    Keyboard.write(KEY_ESC);
+  } else if (name == "space") {
+    Keyboard.write(' ');
+  } else if (name == "backspace") {
+    Keyboard.write(KEY_BACKSPACE);
+  } else if (name == "wintap") {
     Keyboard.press(KEY_LEFT_GUI);
     delay(80);
     Keyboard.releaseAll();
-  }
-  else if (name == "alttab") {
+  } else if (name == "alttab") {
     Keyboard.press(KEY_LEFT_ALT);
     Keyboard.press(KEY_TAB);
     delay(80);
     Keyboard.releaseAll();
-  }
-  else if (name == "altf4") {
+  } else if (name == "altf4") {
     Keyboard.press(KEY_LEFT_ALT);
     Keyboard.press(KEY_F4);
     delay(80);
@@ -354,6 +361,7 @@ const char* CONTROL_PANEL_HTML = R"rawliteral(
 
     <section>
       <h3>Linux</h3>
+      <button class='btn' onclick="run('/run/openkonsole')">Open konsole</button>
       <button class='btn' onclick="run('/run/ricklinux')">Rick Roll</button>
       <button class='btn' onclick="run('/run/rickascii')">Rick Roll (ASCII)</button>
       <button class='btn' onclick="run('/run/cmatrixlinux')">Matrix Screen</button>
@@ -424,14 +432,14 @@ void handleType() {
 }
 
 void handleKey() {
-  String path = server.uri(); // e.g. /key/enter
+  String path = server.uri();  // e.g. /key/enter
   String keyName = path.substring(String("/key/").length());
   pressNamedKey(keyName);
   server.send(200, "text/plain", "OK");
 }
 
 void handleModKey() {
-  String path = server.uri(); // e.g. /modkey/ctrl
+  String path = server.uri();  // e.g. /modkey/ctrl
   String modName = path.substring(String("/modkey/").length());
   if (modName == "releaseall") {
     releaseAllModifiers();
@@ -449,7 +457,7 @@ void handleModKey() {
 
 void setup() {
   rgbLed.begin();
-  setRGBColor(150, 75, 0); // Amber: Starting subsystems
+  setRGBColor(150, 75, 0);  // Amber: Starting subsystems
 
   USB.begin();
   Keyboard.begin();
@@ -540,6 +548,13 @@ void setup() {
     payloadSettingsLinux();
   });
 
+  // opens a konsole/terminal
+  server.on("/run/openkonsole", HTTP_GET, []() {
+    server.send(200, "text/plain", "Opening terminal (Linux - konsole)...");
+    openTerminalLinux();
+  });
+
+
   // speed typing :
   server.on("/run/type", HTTP_GET, []() {
     server.send(200, "text/plain", "Deploying speed type (Linux)...");
@@ -550,7 +565,7 @@ void setup() {
 
   server.begin();
 
-  setRGBColor(0, 0, 80); // Deep Blue: Ready and monitoring for client hookups
+  setRGBColor(0, 0, 80);  // Deep Blue: Ready and monitoring for client hookups
 }
 
 void loop() {
