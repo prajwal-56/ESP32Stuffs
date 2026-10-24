@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>HID Command Deck</title>
+<style>
+  :root {
+    --bg:    #0e0e0e;
+    --sur:   #181818;
+    --sur2:  #222;
+    --bdr:   #2e2e2e;
+    --txt:   #e8e8e8;
+    --dim:   #888;
+    --acc:   #e8e8e8;
+    --red:   #c0392b;
+    --redbdr:#7a1f1f;
+    --nav-h: 60px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    padding-bottom: calc(var(--nav-h) + 12px);
+    max-width: 480px;
+    margin: auto;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    height: var(--nav-h);
+    background: var(--sur); border-top: 1px solid var(--bdr);
+    display: flex; z-index: 100;
+  }
+  nav button {
+    flex: 1; background: none; border: none; color: var(--dim);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; font-size: 10px; cursor: pointer;
+    padding: 6px 0; transition: color .15s;
+  }
+  nav button.active { color: var(--txt); }
+  nav button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+  .page-title { font-size: 17px; font-weight: 600; margin-bottom: 3px; }
+  .page-sub { color: var(--dim); font-size: 12px; margin-bottom: 18px; }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 20px; }
+  .section-label { color: var(--dim); font-size: 11px; letter-spacing: .7px; margin-bottom: 8px; }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; padding: 12px 14px;
+    background: var(--sur); border: 1px solid var(--bdr); border-radius: 7px;
+    color: var(--txt); font-size: 14px; font-weight: 500; cursor: pointer;
+    text-align: left; display: block; margin-bottom: 8px; transition: background .12s;
+  }
+  .btn:active, .btn.pressed { background: var(--sur2); }
+  .btn-danger { border-color: var(--redbdr); color: #e07070; }
+  .btn-danger:active { background: #1a0a0a; }
+  .btn-sm { padding: 9px 10px; font-size: 13px; }
+  .btn.on { background: var(--acc); color: #111; border-color: var(--acc); }
+
+  /* ── Grids ── */
+  .grid { display: grid; gap: 7px; margin-bottom: 8px; }
+  .g2  { grid-template-columns: 1fr 1fr; }
+  .g3  { grid-template-columns: 1fr 1fr 1fr; }
+  .g4  { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .g5  { grid-template-columns: repeat(5,1fr); }
+  .grid .btn { margin: 0; text-align: center; padding: 11px 4px; }
+
+  /* ── Modifier row ── */
+  .mod-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin-bottom: 10px; }
+  .mod-row .btn { text-align: center; padding: 11px 4px; font-size: 13px; font-weight: 600; margin: 0; }
+
+  /* ── Combo row ── */
+  .combo-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; margin-bottom: 8px; }
+  .combo-row .btn { text-align: center; padding: 9px 2px; font-size: 12px; margin: 0; }
+
+  textarea {
+    width: 100%; min-height: 72px; background: #0d0d0d;
+    border: 1px solid var(--bdr); border-radius: 7px;
+    color: var(--txt); padding: 10px; font-size: 14px;
+    resize: vertical; font-family: inherit;
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .row2 .btn { margin: 0; text-align: center; }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .slider-row input { flex: 1; accent-color: var(--acc); }
+  .slider-val { color: var(--dim); font-size: 12px; min-width: 44px; text-align: right; }
+
+  /* ── Builder ── */
+  .step-list {
+    background: var(--sur); border: 1px solid var(--bdr); border-radius: 7px;
+    min-height: 60px; padding: 8px; margin-bottom: 10px;
+  }
+  .step-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--sur2); border-radius: 5px;
+    padding: 8px 10px; margin-bottom: 6px; font-size: 13px;
+  }
+  .step-item:last-child { margin-bottom: 0; }
+  .step-del { background: none; border: none; color: var(--dim); font-size: 16px; cursor: pointer; }
+  .step-empty { color: var(--dim); font-size: 13px; text-align: center; padding: 12px 0; }
+  .picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .picker-grid .btn { font-size: 13px; padding: 10px; text-align: center; margin: 0; }
+  input[type=text], input[type=number] {
+    width: 100%; background: #0d0d0d; border: 1px solid var(--bdr);
+    border-radius: 6px; color: var(--txt); padding: 10px;
+    font-size: 14px; font-family: inherit; margin-top: 6px;
+  }
+  .builder-name-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .builder-name-row input { flex: 1; margin: 0; }
+  .builder-name-row .btn { width: auto; white-space: nowrap; margin: 0; }
+  .saved-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .saved-item .btn { flex: 1; margin: 0; }
+  .saved-del { background: none; border: 1px solid var(--redbdr); border-radius: 5px; color: #e07070; padding: 10px 12px; cursor: pointer; }
+
+  /* ── Log ── */
+  .log-box {
+    background: #0d0d0d; border: 1px solid var(--bdr); border-radius: 7px;
+    min-height: 90px; max-height: 180px; overflow-y: auto;
+    padding: 10px; font-family: monospace; font-size: 12px; color: #aaa;
+  }
+  .log-entry { margin-bottom: 3px; }
+  .log-entry span { color: #555; margin-right: 6px; }
+  .log-ok  { color: #5a5; }
+  .log-err { color: #a55; }
+
+  /* ── Status ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--sur); border: 1px solid var(--bdr); border-radius: 8px; padding: 14px; }
+  .stat-val  { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
+  .stat-lbl  { color: var(--dim); font-size: 11px; letter-spacing: .5px; }
+
+  /* ── LED dot ── */
+  .led-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .led-dot { width: 10px; height: 10px; border-radius: 50%; background: #004; transition: background .4s, box-shadow .4s; }
+  .led-dot.idle   { background: #0030cc; box-shadow: 0 0 8px #0044ff88; animation: pulse 3s ease-in-out infinite; }
+  .led-dot.ready  { background: #1a7a1a; box-shadow: 0 0 6px #22aa2244; }
+  .led-dot.active { animation: blink-white .24s steps(1) infinite; }
+  .led-dot.typing { background: #b46a00; box-shadow: 0 0 6px #cc880044; }
+  .led-dot.danger { animation: blink-red .24s steps(1) infinite; }
+  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+  @keyframes blink-white { 0%{background:#ccc;box-shadow:0 0 8px #fff6} 50%{background:#111;box-shadow:none} }
+  @keyframes blink-red   { 0%{background:#cc2222;box-shadow:0 0 8px #ff000055} 50%{background:#111;box-shadow:none} }
+  .led-label { color: var(--dim); font-size: 12px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--sur2); border: 1px solid var(--bdr); border-radius: 6px;
+    padding: 9px 16px; font-size: 13px; color: var(--dim);
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap;
+    z-index: 200;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  hr { border: none; border-top: 1px solid var(--bdr); margin: 18px 0; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ PAGE: KEYS ══════════════ -->
+<div class="page active" id="pg-keys">
+  <div style="padding:16px 16px 0">
+    <div class="led-row">
+      <div class="led-dot ready" id="ledDot"></div>
+      <span class="led-label" id="ledLabel">1 client connected</span>
+    </div>
+    <div class="page-title">Keys</div>
+    <div class="page-sub">Latch a modifier, then tap a key</div>
+  </div>
+  <div style="padding:0 16px">
+
+    <div class="section">
+      <div class="section-label">Modifiers</div>
+      <div class="mod-row">
+        <button class="btn" id="m-ctrl"  onclick="toggleMod('ctrl')">Ctrl</button>
+        <button class="btn" id="m-shift" onclick="toggleMod('shift')">Shift</button>
+        <button class="btn" id="m-alt"   onclick="toggleMod('alt')">Alt</button>
+        <button class="btn" id="m-gui"   onclick="toggleMod('gui')">Win</button>
+      </div>
+      <button class="btn btn-sm" style="text-align:center;color:var(--dim)" onclick="releaseMods()">Release All Modifiers</button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Quick Combos</div>
+      <div class="combo-row">
+        <button class="btn" onclick="demoKey('Ctrl+A')">Ctrl+A</button>
+        <button class="btn" onclick="demoKey('Ctrl+C')">Ctrl+C</button>
+        <button class="btn" onclick="demoKey('Ctrl+V')">Ctrl+V</button>
+        <button class="btn" onclick="demoKey('Ctrl+Z')">Ctrl+Z</button>
+        <button class="btn" onclick="demoKey('Ctrl+S')">Ctrl+S</button>
+      </div>
+      <div class="combo-row">
+        <button class="btn" onclick="demoKey('Ctrl+X')">Ctrl+X</button>
+        <button class="btn" onclick="demoKey('Ctrl+Y')">Ctrl+Y</button>
+        <button class="btn" onclick="demoKey('Alt+Tab')">Alt+Tab</button>
+        <button class="btn" onclick="demoKey('Alt+F4')">Alt+F4</button>
+        <button class="btn" onclick="demoKey('Win')">Win</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Control Keys</div>
+      <div class="grid g4">
+        <button class="btn" onclick="demoKey('Enter')">Enter</button>
+        <button class="btn" onclick="demoKey('Tab')">Tab</button>
+        <button class="btn" onclick="demoKey('Esc')">Esc</button>
+        <button class="btn" onclick="demoKey('Space')">Space</button>
+        <button class="btn" onclick="demoKey('Backspace')">Bksp</button>
+        <button class="btn" onclick="demoKey('Delete')">Del</button>
+        <button class="btn" onclick="demoKey('Insert')">Ins</button>
+        <button class="btn" onclick="demoKey('Ctrl+Alt+Del')">C+A+D</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Navigation</div>
+      <div class="grid g3" style="margin-bottom:7px">
+        <button class="btn" onclick="demoKey('Home')">Home</button>
+        <button class="btn" onclick="demoKey('End')">End</button>
+        <div></div>
+        <button class="btn" onclick="demoKey('PgUp')">PgUp</button>
+        <button class="btn" onclick="demoKey('PgDn')">PgDn</button>
+        <div></div>
+      </div>
+      <div class="grid g3">
+        <div></div>
+        <button class="btn" onclick="demoKey('↑')">↑</button>
+        <div></div>
+        <button class="btn" onclick="demoKey('←')">←</button>
+        <button class="btn" onclick="demoKey('↓')">↓</button>
+        <button class="btn" onclick="demoKey('→')">→</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Function Keys</div>
+      <div class="grid g4">
+        <button class="btn" onclick="demoKey('F1')">F1</button>
+        <button class="btn" onclick="demoKey('F2')">F2</button>
+        <button class="btn" onclick="demoKey('F3')">F3</button>
+        <button class="btn" onclick="demoKey('F4')">F4</button>
+        <button class="btn" onclick="demoKey('F5')">F5</button>
+        <button class="btn" onclick="demoKey('F6')">F6</button>
+        <button class="btn" onclick="demoKey('F7')">F7</button>
+        <button class="btn" onclick="demoKey('F8')">F8</button>
+        <button class="btn" onclick="demoKey('F9')">F9</button>
+        <button class="btn" onclick="demoKey('F10')">F10</button>
+        <button class="btn" onclick="demoKey('F11')">F11</button>
+        <button class="btn" onclick="demoKey('F12')">F12</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Letters</div>
+      <div class="grid g5">
+        <button class="btn" onclick="demoKey('Q')">Q</button><button class="btn" onclick="demoKey('W')">W</button><button class="btn" onclick="demoKey('E')">E</button><button class="btn" onclick="demoKey('R')">R</button><button class="btn" onclick="demoKey('T')">T</button>
+        <button class="btn" onclick="demoKey('Y')">Y</button><button class="btn" onclick="demoKey('U')">U</button><button class="btn" onclick="demoKey('I')">I</button><button class="btn" onclick="demoKey('O')">O</button><button class="btn" onclick="demoKey('P')">P</button>
+        <button class="btn" onclick="demoKey('A')">A</button><button class="btn" onclick="demoKey('S')">S</button><button class="btn" onclick="demoKey('D')">D</button><button class="btn" onclick="demoKey('F')">F</button><button class="btn" onclick="demoKey('G')">G</button>
+        <button class="btn" onclick="demoKey('H')">H</button><button class="btn" onclick="demoKey('J')">J</button><button class="btn" onclick="demoKey('K')">K</button><button class="btn" onclick="demoKey('L')">L</button><button class="btn" onclick="demoKey('Z')">Z</button>
+        <button class="btn" onclick="demoKey('X')">X</button><button class="btn" onclick="demoKey('C')">C</button><button class="btn" onclick="demoKey('V')">V</button><button class="btn" onclick="demoKey('B')">B</button><button class="btn" onclick="demoKey('N')">N</button>
+        <button class="btn" onclick="demoKey('M')">M</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Numbers</div>
+      <div class="grid g5">
+        <button class="btn" onclick="demoKey('1')">1</button><button class="btn" onclick="demoKey('2')">2</button><button class="btn" onclick="demoKey('3')">3</button><button class="btn" onclick="demoKey('4')">4</button><button class="btn" onclick="demoKey('5')">5</button>
+        <button class="btn" onclick="demoKey('6')">6</button><button class="btn" onclick="demoKey('7')">7</button><button class="btn" onclick="demoKey('8')">8</button><button class="btn" onclick="demoKey('9')">9</button><button class="btn" onclick="demoKey('0')">0</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Custom Text</div>
+      <textarea id="typeBox" placeholder="Type something to send…"></textarea>
+      <div class="slider-row">
+        <span style="color:var(--dim);font-size:12px">Delay per char</span>
+        <input type="range" min="0" max="200" value="0" oninput="document.getElementById('delayVal').textContent=this.value+'ms'">
+        <span class="slider-val" id="delayVal">0ms</span>
+      </div>
+      <div class="row2">
+        <button class="btn" onclick="demoType(false)">Type</button>
+        <button class="btn" onclick="demoType(true)">Type + Enter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: PAYLOADS ══════════════ -->
+<div class="page" id="pg-payloads">
+  <div style="padding:16px 16px 0">
+    <div class="page-title">Payloads</div>
+    <div class="page-sub">Pre-built keystroke sequences</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="section">
+      <div class="section-label">Windows</div>
+      <button class="btn" onclick="demoPayload('Rick Roll — opening YouTube on target')">Rick Roll</button>
+      <button class="btn" onclick="demoPayload('Matrix screen — cmd color 0a + tree c:\\')">Matrix Screen</button>
+      <button class="btn" onclick="demoPayload('Volume Up ×10 via Consumer Control HID')">Volume Up ×10</button>
+      <button class="btn" onclick="demoPayload('Opening msinfo32')">System Info</button>
+      <button class="btn" onclick="demoPayload('Opening Windows Settings (Win+I)')">Open Settings</button>
+      <button class="btn btn-danger" onclick="demoConfirm('shutdown this Windows machine','Shutdown queued — 60s timer started on target')">Shutdown (60s timer)</button>
+      <button class="btn btn-danger" onclick="demoConfirm('reboot this Windows machine','Reboot queued — 60s timer started on target')">Reboot (60s timer)</button>
+    </div>
+    <hr>
+    <div class="section">
+      <div class="section-label">Linux</div>
+      <button class="btn" onclick="demoPayload('Opening terminal — Ctrl+Alt+T')">Open Terminal</button>
+      <button class="btn" onclick="demoPayload('Rick Roll — xdg-open YouTube')">Rick Roll</button>
+      <button class="btn" onclick="demoPayload('ASCII Rick Roll — curl ascii.live/rick')">Rick Roll (ASCII)</button>
+      <button class="btn" onclick="demoPayload('Matrix screen — cmatrix or fallback loop')">Matrix Screen</button>
+      <button class="btn" onclick="demoPayload('Volume Up ×10 via Consumer Control HID')">Volume Up ×10</button>
+      <button class="btn" onclick="demoPayload('Opening GNOME settings via Super key search')">Open Settings</button>
+      <button class="btn" onclick="demoSpam()">Keyboard Spammer</button>
+      <button class="btn" onclick="stopSpam()">Stop Spammer</button>
+      <button class="btn btn-danger" onclick="demoConfirm('shut down this Linux machine','Shutdown command sent — shutdown -h +1')">Shutdown</button>
+      <button class="btn btn-danger" onclick="demoConfirm('reboot this Linux machine','Reboot command sent — shutdown -r +1')">Reboot</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: BUILDER ══════════════ -->
+<div class="page" id="pg-builder">
+  <div style="padding:16px 16px 0">
+    <div class="page-title">Payload Builder</div>
+    <div class="page-sub">Build a custom sequence, save and replay it</div>
+  </div>
+  <div style="padding:0 16px">
+
+    <div class="section">
+      <div class="section-label">Sequence</div>
+      <div class="step-list" id="stepList">
+        <div class="step-empty" id="stepEmpty">No steps yet. Add one below.</div>
+      </div>
+
+      <div class="section-label">Add Step</div>
+      <div class="picker-grid">
+        <button class="btn" onclick="addStep('text')">Type Text</button>
+        <button class="btn" onclick="addStep('key')">Single Key</button>
+        <button class="btn" onclick="addStep('combo')">Key Combo</button>
+        <button class="btn" onclick="addStep('delay')">Delay</button>
+        <button class="btn" onclick="addStep('openrun')">Open Run (Win)</button>
+        <button class="btn" onclick="addStep('openterm')">Open Terminal</button>
+        <button class="btn" onclick="addStep('enter')">Press Enter</button>
+        <button class="btn" onclick="addStep('tab')">Press Tab</button>
+      </div>
+    </div>
+
+    <div class="section" id="stepInputSection" style="display:none">
+      <div class="section-label" id="stepInputLabel">Step details</div>
+      <input type="text"   id="stepText"  placeholder="Text to type" style="display:none">
+      <input type="text"   id="stepKey"   placeholder="Key name, e.g. f5 or a" style="display:none">
+      <div id="stepComboWrap" style="display:none">
+        <div class="mod-row" style="margin-bottom:8px">
+          <button class="btn" id="bc-ctrl"  onclick="toggleBC('ctrl')">Ctrl</button>
+          <button class="btn" id="bc-shift" onclick="toggleBC('shift')">Shift</button>
+          <button class="btn" id="bc-alt"   onclick="toggleBC('alt')">Alt</button>
+          <button class="btn" id="bc-gui"   onclick="toggleBC('gui')">Win</button>
+        </div>
+        <input type="text" id="stepComboKey" placeholder="Key, e.g. z or f4">
+      </div>
+      <input type="number" id="stepDelay" placeholder="Delay in ms, e.g. 500" style="display:none" min="0" max="9999">
+      <button class="btn" style="margin-top:10px;text-align:center" onclick="confirmStep()">Add to Sequence</button>
+    </div>
+
+    <div class="section">
+      <div class="builder-name-row">
+        <input type="text" id="seqName" placeholder="Sequence name…">
+        <button class="btn" onclick="saveSeq()">Save</button>
+      </div>
+      <div class="row2">
+        <button class="btn" onclick="runSeq()">Run Now</button>
+        <button class="btn btn-danger" onclick="clearSeq()">Clear</button>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+      <div class="section-label">Saved Sequences</div>
+      <div id="savedList"><div style="color:var(--dim);font-size:13px">No saved sequences yet.</div></div>
+    </div>
+
+    <hr>
+
+    <div class="section">
+      <div class="section-label">Log</div>
+      <div class="log-box" id="logBox"></div>
+      <button class="btn btn-sm" style="margin-top:8px;text-align:center;color:var(--dim)" onclick="clearLog()">Clear Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: STATUS ══════════════ -->
+<div class="page" id="pg-status">
+  <div style="padding:16px 16px 0">
+    <div class="page-title">Status</div>
+    <div class="page-sub">Live device info</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val" id="s-clients">1</div><div class="stat-lbl">Clients</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-uptime">00:04:31</div><div class="stat-lbl">Uptime</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-heap">214K</div><div class="stat-lbl">Free Heap</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-ip">192.168.4.1</div><div class="stat-lbl">AP IP</div></div>
+    </div>
+    <div class="section">
+      <div class="section-label">RGB LED</div>
+      <div class="led-row" style="margin-bottom:0">
+        <div class="led-dot ready" id="statusLedDot"></div>
+        <span class="led-label" id="statusLedLabel">Solid green — client connected, ready</span>
+      </div>
+    </div>
+    <hr>
+    <div class="section">
+      <div class="section-label">Log</div>
+      <div class="log-box" id="logBox2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav>
+  <button class="active" onclick="goPage('keys',this)">
+    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="13" rx="2"/><line x1="6" y1="10" x2="6.01" y2="10"/><line x1="10" y1="10" x2="10.01" y2="10"/><line x1="14" y1="10" x2="14.01" y2="10"/><line x1="18" y1="10" x2="18.01" y2="10"/><line x1="6" y1="14" x2="6.01" y2="14"/><line x1="10" y1="14" x2="14" y2="14"/><line x1="18" y1="14" x2="18.01" y2="14"/></svg>
+    Keys
+  </button>
+  <button onclick="goPage('payloads',this)">
+    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Payloads
+  </button>
+  <button onclick="goPage('builder',this)">
+    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Builder
+  </button>
+  <button onclick="goPage('status',this)">
+    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    Status
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+// ── Nav ──────────────────────────────────────────────────────────────────────
+function goPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('pg-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ── Log ──────────────────────────────────────────────────────────────────────
+function log(msg, cls='') {
+  const now = new Date();
+  const ts  = now.getHours().toString().padStart(2,'0') + ':' +
+               now.getMinutes().toString().padStart(2,'0') + ':' +
+               now.getSeconds().toString().padStart(2,'0');
+  const entry = `<div class="log-entry ${cls}"><span>${ts}</span>${msg}</div>`;
+  ['logBox','logBox2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML += entry; el.scrollTop = el.scrollHeight; }
+  });
+}
+function clearLog() {
+  ['logBox','logBox2'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+}
+
+// ── LED helpers ───────────────────────────────────────────────────────────────
+function setLed(mode, labelText) {
+  ['ledDot','statusLedDot'].forEach(id => {
+    const d = document.getElementById(id);
+    if (d) { d.className = 'led-dot ' + mode; }
+  });
+  const ll = document.getElementById('ledLabel');
+  const sl = document.getElementById('statusLedLabel');
+  if (ll) ll.textContent = labelText;
+  if (sl) sl.textContent = labelText;
+}
+function flashLed(mode, label, ms=1600) {
+  setLed(mode, label);
+  setTimeout(() => setLed('ready','1 client connected, ready'), ms);
+}
+
+// ── Modifier latch ────────────────────────────────────────────────────────────
+const mods = { ctrl:false, shift:false, alt:false, gui:false };
+function toggleMod(name) {
+  mods[name] = !mods[name];
+  document.getElementById('m-' + name).classList.toggle('on', mods[name]);
+  const active = Object.keys(mods).filter(k => mods[k]);
+  if (active.length) {
+    log('Modifier held: ' + active.join('+'));
+    toast(active.join('+') + ' latched');
+  } else {
+    log('Modifier released: ' + name);
+    toast(name + ' released');
+  }
+}
+function releaseMods() {
+  Object.keys(mods).forEach(k => { mods[k] = false; document.getElementById('m-' + k).classList.remove('on'); });
+  toast('All modifiers released');
+  log('All modifiers released');
+}
+
+// ── Key / combo ───────────────────────────────────────────────────────────────
+function demoKey(name) {
+  const held = Object.keys(mods).filter(k => mods[k]);
+  const label = held.length ? held.join('+') + '+' + name : name;
+  flashLed('active', 'Sending: ' + label, 800);
+  log('Sent: ' + label, 'log-ok');
+  toast('Sent: ' + label);
+  // Auto-release one-shot modifiers after firing
+  if (held.length) {
+    Object.keys(mods).forEach(k => { mods[k] = false; document.getElementById('m-' + k).classList.remove('on'); });
+  }
+}
+
+// ── Type ──────────────────────────────────────────────────────────────────────
+function demoType(withEnter) {
+  const text = document.getElementById('typeBox').value;
+  if (!text) { toast('Nothing to type'); return; }
+  flashLed('typing', 'Injecting text…', text.length * 30 + 400);
+  log('Typed: "' + text.substring(0, 30) + (text.length > 30 ? '…' : '"'), 'log-ok');
+  if (withEnter) log('↳ Enter sent', 'log-ok');
+  toast('Typing…');
+}
+
+// ── Payloads ─────────────────────────────────────────────────────────────────
+function demoPayload(label) {
+  flashLed('active', 'Running payload…', 1600);
+  log(label, 'log-ok');
+  toast('Payload sent');
+}
+
+function demoConfirm(actionLabel, doneLabel) {
+  if (confirm('Are you sure you want to ' + actionLabel + '?')) {
+    flashLed('danger', 'Danger command sent!', 2400);
+    log(doneLabel, 'log-ok');
+    toast('Sent');
+  }
+}
+
+// ── Spam ──────────────────────────────────────────────────────────────────────
+let spamInterval = null;
+function demoSpam() {
+  if (spamInterval) return;
+  setLed('active', 'Keyboard spammer running…');
+  log('Keyboard spammer started', 'log-ok');
+  toast('Spammer running');
+}
+function stopSpam() {
+  setLed('ready', '1 client connected, ready');
+  log('Keyboard spammer stopped');
+  toast('Spammer stopped');
+}
+
+// ── Builder ───────────────────────────────────────────────────────────────────
+let steps = [];
+let curType = null;
+const bc = { ctrl:false, shift:false, alt:false, gui:false };
+
+function toggleBC(name) {
+  bc[name] = !bc[name];
+  document.getElementById('bc-' + name).classList.toggle('on', bc[name]);
+}
+
+function addStep(type) {
+  curType = type;
+  ['stepText','stepKey','stepComboWrap','stepDelay'].forEach(id => document.getElementById(id).style.display='none');
+  document.getElementById('stepInputSection').style.display = 'block';
+  const labels = { text:'Text to type', key:'Key name', combo:'Key combination', delay:'Delay duration', openrun:'Open Run dialog (Windows)', openterm:'Open terminal (Linux)', enter:'Press Enter', tab:'Press Tab' };
+  document.getElementById('stepInputLabel').textContent = labels[type] || type;
+  if (type==='text')    document.getElementById('stepText').style.display='block';
+  else if (type==='key') document.getElementById('stepKey').style.display='block';
+  else if (type==='combo') document.getElementById('stepComboWrap').style.display='block';
+  else if (type==='delay') document.getElementById('stepDelay').style.display='block';
+}
+
+function confirmStep() {
+  let label = '', valid = true;
+  if (curType==='text') {
+    const v = document.getElementById('stepText').value; if(!v){valid=false;} else label='Type: "'+v.substring(0,20)+(v.length>20?'…':'"');
+  } else if (curType==='key') {
+    const v = document.getElementById('stepKey').value.trim(); if(!v){valid=false;} else label='Key: '+v;
+  } else if (curType==='combo') {
+    const k = document.getElementById('stepComboKey').value.trim(); if(!k){valid=false;}
+    else { const m=Object.keys(bc).filter(x=>bc[x]); label='Combo: '+[...m,k].join('+'); Object.keys(bc).forEach(x=>{bc[x]=false;document.getElementById('bc-'+x).classList.remove('on');}); }
+  } else if (curType==='delay') {
+    const v=parseInt(document.getElementById('stepDelay').value)||500; label='Delay: '+v+'ms';
+  } else if (curType==='openrun') label='Open Run (Win)';
+  else if (curType==='openterm') label='Open Terminal (Linux)';
+  else if (curType==='enter') label='Enter';
+  else if (curType==='tab') label='Tab';
+  if (!valid) { toast('Fill in the field first'); return; }
+  steps.push(label);
+  renderSteps();
+  document.getElementById('stepInputSection').style.display='none';
+  toast('Step added');
+}
+
+function renderSteps() {
+  const list = document.getElementById('stepList');
+  if (steps.length===0) {
+    list.innerHTML = '<div class="step-empty" id="stepEmpty">No steps yet. Add one below.</div>';
+    return;
+  }
+  list.innerHTML = steps.map((s,i) =>
+    `<div class="step-item">${i+1}. ${s}<button class="step-del" onclick="removeStep(${i})">×</button></div>`
+  ).join('');
+}
+function removeStep(i) { steps.splice(i,1); renderSteps(); }
+function clearSeq() { steps=[]; renderSteps(); document.getElementById('stepInputSection').style.display='none'; }
+
+function runSeq() {
+  if (!steps.length) { toast('No steps to run'); return; }
+  flashLed('active','Running custom sequence…', steps.length * 400 + 600);
+  log('Running sequence ('+steps.length+' steps)', 'log-ok');
+  steps.forEach((s,i) => setTimeout(() => log('  Step '+(i+1)+': '+s,'log-ok'), i*120));
+  toast('Sequence running');
+}
+
+function saveSeq() {
+  const name = document.getElementById('seqName').value.trim();
+  if (!name||!steps.length) { toast('Name the sequence and add steps first'); return; }
+  const saved = JSON.parse(localStorage.getItem('hid_seqs')||'{}');
+  saved[name] = [...steps];
+  localStorage.setItem('hid_seqs', JSON.stringify(saved));
+  renderSaved();
+  log('Saved: '+name, 'log-ok');
+  toast('Saved: ' + name);
+}
+function renderSaved() {
+  const saved = JSON.parse(localStorage.getItem('hid_seqs')||'{}');
+  const keys = Object.keys(saved);
+  const el = document.getElementById('savedList');
+  if (!keys.length) { el.innerHTML='<div style="color:var(--dim);font-size:13px">No saved sequences yet.</div>'; return; }
+  el.innerHTML = keys.map(name =>
+    `<div class="saved-item">
+      <button class="btn" onclick="loadRun('${name}')">${name}</button>
+      <button class="saved-del" onclick="deleteSeq('${name}')">×</button>
+    </div>`
+  ).join('');
+}
+function loadRun(name) {
+  const saved = JSON.parse(localStorage.getItem('hid_seqs')||'{}');
+  if (!saved[name]) return;
+  steps = [...saved[name]];
+  renderSteps();
+  runSeq();
+}
+function deleteSeq(name) {
+  const saved = JSON.parse(localStorage.getItem('hid_seqs')||'{}');
+  delete saved[name]; localStorage.setItem('hid_seqs', JSON.stringify(saved));
+  renderSaved(); toast('Deleted: '+name);
+}
+renderSaved();
+
+// ── Status uptime counter (demo) ──────────────────────────────────────────────
+let uptimeSec = 271;
+setInterval(() => {
+  uptimeSec++;
+  const h = Math.floor(uptimeSec/3600), m = Math.floor((uptimeSec%3600)/60), s = uptimeSec%60;
+  const el = document.getElementById('s-uptime');
+  if (el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}, 1000);
+</script>
+</body>
+</html>
